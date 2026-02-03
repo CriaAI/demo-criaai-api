@@ -15,6 +15,10 @@ A ideia deste projeto é **chamar uma API que automaticamente muda os cookies do
 
 - 🔐 Login automático na API da CriaAI
 - 📄 Criação de documento externo via `createDocumentExternal`
+- 🔄 **Continuação de documentos existentes**
+- 📋 **Listagem e gerenciamento de documentos**
+- 👁️ **Visualização de documentos concluídos**
+- 💾 **Persistência local de documentos**
 - 🍪 Configuração automática de cookies cross-domain
 - 🔄 Redirecionamento transparente para CriaAI
 - 📞 Recebimento de callback após finalização do documento
@@ -78,7 +82,10 @@ Para testar especificamente a configuração de cookies:
 ### Componentes Principais
 
 - **`lib/config.ts`**: Validação e centralização de configuração
+- **`lib/documentStorage.ts`**: Gerenciamento de persistência local de documentos
+- **`lib/continueDocument.ts`**: Lógica para continuar documentos existentes
 - **`app/page.tsx`**: Interface principal e fluxo de integração
+- **`app/documents/page.tsx`**: Listagem e gerenciamento de documentos
 - **`app/callback/page.tsx`**: Página de retorno após finalizar documento
 - **`test/`**: Arquivos de teste e validação
 
@@ -87,7 +94,7 @@ Para testar especificamente a configuração de cookies:
 Crie um arquivo `.env.local`:
 
 ```env
-NEXT_PUBLIC_API_BASE_URL=https://z45mlqpuui.execute-api.sa-east-1.amazonaws.com
+NEXT_PUBLIC_API_BASE_URL=https://api-whitelabel-dev.criaai.com
 NEXT_PUBLIC_AUTH_API_URL=https://kqa418uhgj.execute-api.sa-east-1.amazonaws.com
 NEXT_PUBLIC_STAGE=nonprod
 NEXT_PUBLIC_API_KEY=sua-api-key
@@ -136,5 +143,63 @@ POST /documents/create-document
 Usuário é redirecionado automaticamente para trabalhar no documento na plataforma CriaAI
 
 ### 6. Callback de Retorno
-Após finalizar o documento, o usuário é redirecionado para `/callback` com parâmetros de sucesso/erro
+Após finalizar o documento, o usuário é redirecionado para `/callback` com parâmetros de sucesso/erro. O status do documento é automaticamente atualizado para `COMPLETED` no localStorage.
+
+## Gerenciamento de Documentos
+
+### Acessar Documentos
+
+Navegue para `/documents` ou clique em "📋 Meus Documentos" na página inicial para ver todos os seus documentos.
+
+### Estados de Documento
+
+- **Em Andamento** (`IN_PROGRESS`): Documento criado mas não finalizado - pode continuar editando
+- **Concluído** (`COMPLETED`): Documento finalizado - disponível para visualização
+- **Erro** (`ERROR`): Documento com erro no processamento
+
+### Persistência Local
+
+Os documentos são armazenados no `localStorage` do navegador com os seguintes dados:
+
+```typescript
+{
+  documentId: string,
+  status: 'IN_PROGRESS' | 'COMPLETED' | 'ERROR',
+  createdAt: string,
+  lastModified: string,
+  continueUrl?: string,
+  documentUrl?: string,
+  callbackUrl: string
+}
+```
+
+### Limpeza Automática
+
+- Documentos com mais de **30 dias** são removidos automaticamente
+- Máximo de **50 documentos** armazenados
+- Você pode excluir documentos manualmente a qualquer momento
+
+### Fluxos Disponíveis
+
+#### 1. Criar Novo Documento
+```
+/ → Criar Documento → Login → Create → Redirect → Editar → Callback → Status: COMPLETED
+```
+
+#### 2. Continuar Documento Existente
+```
+/documents → Selecionar Documento → Reautenticar → Redirect → Continuar Edição → Callback
+```
+
+#### 3. Visualizar Documento Concluído
+```
+/documents → Selecionar Documento Concluído → Redirect (mode=view) → Visualização
+```
+
+### ⚠️ Importante
+
+- Os documentos são armazenados **localmente no navegador**
+- Limpar o cache/cookies do navegador **remove todos os documentos** da lista
+- Os documentos reais permanecem na CriaAI, apenas a lista local é afetada
+- Esta é uma POC - em produção, use backend para gerenciar documentos
 

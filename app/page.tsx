@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { documentStorage, DocumentStatus } from '@/lib/documentStorage'
 
 /**
  * Página principal do site da Integração (simulação)
@@ -104,11 +105,21 @@ export default function Home() {
       const documentId = createData.data?.documentId || createData.data?.documentID || createData.documentId || createData.documentID
       const docToken = createData.data?.authorization || createData.authorization || authorization
       const docRefreshToken = createData.data?.refreshToken || createData.refreshToken || refreshToken
+      const continueUrl = createData.data?.continueUrl || createData.continueUrl
 
       if (!documentId) {
         console.error('Resposta completa:', createData)
         throw new Error('documentId não recebido na resposta')
       }
+
+      // Salvar documento no localStorage
+      documentStorage.save({
+        documentId,
+        status: DocumentStatus.IN_PROGRESS,
+        continueUrl,
+        callbackUrl: `${typeof window !== 'undefined' ? window.location.origin : ''}/callback`
+      })
+      console.log('📝 Documento salvo no localStorage:', documentId)
 
       setStep('redirect')
 
@@ -203,21 +214,31 @@ export default function Home() {
             </p>
           </div>
 
-          {/* Action Button */}
-          <button
-            onClick={handleCreateDocument}
-            disabled={loading}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition-colors shadow-lg hover:shadow-xl"
-          >
-            {loading ? (
-              <span className="flex items-center justify-center gap-2">
-                <span className="animate-spin">⟳</span>
-                Processando...
-              </span>
-            ) : (
-              'Criar Documento na CriaAI'
-            )}
-          </button>
+          {/* Action Buttons */}
+          <div className="space-y-3">
+            <button
+              onClick={handleCreateDocument}
+              disabled={loading}
+              className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition-colors shadow-lg hover:shadow-xl"
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="animate-spin">⟳</span>
+                  Processando...
+                </span>
+              ) : (
+                'Criar Documento na CriaAI'
+              )}
+            </button>
+            
+            <button
+              onClick={() => window.location.href = '/documents'}
+              disabled={loading}
+              className="w-full bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 disabled:cursor-not-allowed text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors border border-gray-300"
+            >
+              📋 Meus Documentos
+            </button>
+          </div>
         </div>
       </div>
     </div>

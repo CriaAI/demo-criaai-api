@@ -2,6 +2,7 @@
 
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useState, Suspense } from 'react'
+import { documentStorage, DocumentStatus } from '@/lib/documentStorage'
 
 /**
  * Componente que usa useSearchParams - deve estar dentro de Suspense
@@ -16,6 +17,21 @@ function CallbackContent() {
       paramsObj[key] = value
     })
     setParams(paramsObj)
+    
+    // Atualizar status do documento quando callback for recebido
+    const success = paramsObj.success === 'True'
+    const documentId = paramsObj.documentId || paramsObj.document_id
+    const documentUrl = paramsObj.document_url
+    
+    if (documentId) {
+      if (success) {
+        console.log('✅ Documento finalizado com sucesso:', documentId)
+        documentStorage.updateStatus(documentId, DocumentStatus.COMPLETED, documentUrl)
+      } else {
+        console.log('❌ Erro ao processar documento:', documentId)
+        documentStorage.updateStatus(documentId, DocumentStatus.ERROR)
+      }
+    }
   }, [searchParams])
 
   const success = params.success === 'True'
@@ -90,12 +106,21 @@ function CallbackContent() {
             </pre>
           </div>
 
-          <button
-            onClick={() => window.location.href = '/'}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors shadow-lg hover:shadow-xl"
-          >
-            Criar Novo Documento
-          </button>
+          <div className="space-y-3">
+            <button
+              onClick={() => window.location.href = '/documents'}
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors shadow-lg hover:shadow-xl"
+            >
+              📋 Ver Meus Documentos
+            </button>
+            
+            <button
+              onClick={() => window.location.href = '/'}
+              className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors border border-gray-300"
+            >
+              + Criar Novo Documento
+            </button>
+          </div>
         </div>
       </div>
     </div>
