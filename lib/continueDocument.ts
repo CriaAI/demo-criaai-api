@@ -44,9 +44,10 @@ async function callContinueDocumentApi(
   token: string,
   config: Config
 ): Promise<string> {
-  const apiUrl = `${config.apiBaseUrl}/documents/continue-document/${documentId}`
+  const apiUrl = `${config.apiBaseUrl}/documents/continue-document`
   
   console.log('🔄 Chamando continue-document API:', apiUrl)
+  console.log('📋 DocumentId:', documentId)
   
   const response = await fetch(apiUrl, {
     method: 'POST',
@@ -56,6 +57,7 @@ async function callContinueDocumentApi(
       'Authorization': `Bearer ${token}`,
       'Origin': config.criaaiFrontendUrl
     },
+    body: JSON.stringify({ documentId }),
     credentials: 'include'
   })
 
