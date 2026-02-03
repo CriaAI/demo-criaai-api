@@ -34,8 +34,8 @@ export function getConfig(): Config {
 
   // Credenciais obrigatórias
   const apiKey = process.env.NEXT_PUBLIC_API_KEY
-  const partnerEmail = process.env.PARTNER_EMAIL
-  const partnerPassword = process.env.PARTNER_PASSWORD
+  const partnerEmail = process.env.NEXT_PUBLIC_PARTNER_EMAIL
+  const partnerPassword = process.env.NEXT_PUBLIC_PARTNER_PASSWORD
 
   // Validações
   if (!apiBaseUrl) {
@@ -59,11 +59,11 @@ export function getConfig(): Config {
   }
 
   if (!partnerEmail) {
-    errors.push('PARTNER_EMAIL não está configurada')
+    errors.push('NEXT_PUBLIC_PARTNER_EMAIL não está configurada')
   }
 
   if (!partnerPassword) {
-    errors.push('PARTNER_PASSWORD não está configurada')
+    errors.push('NEXT_PUBLIC_PARTNER_PASSWORD não está configurada')
   }
 
   // Validação de URLs

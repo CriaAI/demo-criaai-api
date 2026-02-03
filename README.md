@@ -101,8 +101,8 @@ NEXT_PUBLIC_API_KEY=sua-api-key
 NEXT_PUBLIC_CRIAAI_FRONTEND_URL=https://dev-test.criaai.com
 
 # Credenciais do parceiro para login automático
-PARTNER_EMAIL=partner@example.com
-PARTNER_PASSWORD=password123
+NEXT_PUBLIC_PARTNER_EMAIL=partner@example.com
+NEXT_PUBLIC_PARTNER_PASSWORD=password123
 ```
 
 ### Explicação das URLs
