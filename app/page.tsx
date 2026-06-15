@@ -34,7 +34,8 @@ export default function Home() {
 
     try {
       // Passo 1: Login do parceiro na API da CriaAI
-      const loginResponse = await fetch(`${AUTH_API_URL}/${STAGE}/auth/login`, {
+      // OBS: o endpoint NÃO tem prefixo de stage (/nonprod). A rota real é /auth/login.
+      const loginResponse = await fetch(`${AUTH_API_URL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -65,17 +66,22 @@ export default function Home() {
       setStep('create')
 
       // Passo 2: Criar documento externo
-      // POST direto para o backend com credentials para permitir cookies
-      const createResponse = await fetch(`${AUTH_API_URL}/${STAGE}/documents/create-document`, {
+      // credentials: 'include' é OBRIGATÓRIO: a API responde com a origin ecoada +
+      // Access-Control-Allow-Credentials: true e devolve Set-Cookie (authToken,
+      // authRefreshToken, documentId) no Domain=.criaai.com. É assim que a sessão
+      // chega autenticada no front — não via token na URL.
+      const createResponse = await fetch(`${AUTH_API_URL}/documents/create-document`, {
         method: 'POST',
         headers: {
           'Authorization': authorization,
           'Content-Type': 'application/json',
           'x-api-key': API_KEY
         },
-        credentials: 'include', // Importante: permite cookies cross-domain
+        credentials: 'include',
         body: JSON.stringify({
-          linkCallback: `${typeof window !== 'undefined' ? window.location.origin : ''}/callback?token=demo123`
+          linkCallback: `${typeof window !== 'undefined' ? window.location.origin : ''}/callback?token=demo123`,
+          documentType: 'rtf',
+          partnerUserId: PARTNER_EMAIL
         })
       })
 
