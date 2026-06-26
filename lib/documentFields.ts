@@ -134,30 +134,31 @@ export function getFieldNames(documentClassID: number, documentSubClassID: numbe
 }
 
 /**
- * Monta o objeto de campos opcionais a partir dos valores preenchidos,
+ * Monta o objeto `prompt` (campos de contexto) a partir dos valores preenchidos,
  * descartando vazios e convertendo `valorDaCausa` para número.
+ *
+ * IMPORTANTE: o `POST /documents/create-document` rejeita esses campos quando
+ * enviados no topo do body (`422 Unknown field`). Eles precisam ir **aninhados**
+ * num objeto `prompt` — verificado empiricamente contra o ambiente de dev.
+ * Já `documentClassID` / `documentSubClassID` vão no topo do body.
  */
-export function buildExtraFields(
+export function buildPromptFields(
   documentClassID: number,
   documentSubClassID: number,
   values: Record<string, string>
-): Record<string, string | number> {
+): Record<string, string> {
   const validNames = new Set(getFieldNames(documentClassID, documentSubClassID))
-  const extra: Record<string, string | number> = {}
+  const prompt: Record<string, string> = {}
 
   for (const [name, rawValue] of Object.entries(values)) {
     if (!validNames.has(name)) continue
     const value = rawValue?.trim()
     if (!value) continue
 
-    if (name === 'valorDaCausa') {
-      const parsed = parseFloat(value.replace(',', '.'))
-      if (!isNaN(parsed)) extra[name] = parsed
-      continue
-    }
-
-    extra[name] = value
+    // `valorDaCausa` é enviado como string: a API aceita "string ou float",
+    // e um inteiro JSON (ex.: 15000) é recusado por não ser float.
+    prompt[name] = value
   }
 
-  return extra
+  return prompt
 }

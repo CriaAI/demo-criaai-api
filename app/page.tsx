@@ -5,7 +5,7 @@ import { documentStorage, DocumentStatus } from '@/lib/documentStorage'
 import {
   DOCUMENT_TYPES,
   getFieldGroups,
-  buildExtraFields,
+  buildPromptFields,
   FieldDef,
 } from '@/lib/documentFields'
 
@@ -87,8 +87,10 @@ export default function Home() {
 
       setStep('create')
 
-      // Campos opcionais escolhidos pelo integrador (descarta vazios)
-      const extraFields = buildExtraFields(
+      // Campos de contexto escolhidos pelo integrador (descarta vazios).
+      // ATENÇÃO: o create-document rejeita esses campos no topo do body
+      // (422 Unknown field). Eles vão aninhados num objeto `prompt`.
+      const promptFields = buildPromptFields(
         docType.documentClassID,
         docType.documentSubClassID,
         fieldValues
@@ -99,15 +101,17 @@ export default function Home() {
       // Access-Control-Allow-Credentials: true e devolve Set-Cookie (authToken,
       // authRefreshToken, documentId) no Domain=.criaai.com. É assim que a sessão
       // chega autenticada no front — não via token na URL.
-      const createBody = {
+      const createBody: Record<string, unknown> = {
         linkCallback: `${typeof window !== 'undefined' ? window.location.origin : ''}/callback?token=demo123`,
         documentType: 'rtf',
         partnerUserId: PARTNER_EMAIL,
-        // Tipo de documento escolhido (define quais campos opcionais se aplicam)
+        // Tipo de documento escolhido (vai no topo do body)
         documentClassID: docType.documentClassID,
         documentSubClassID: docType.documentSubClassID,
-        // Campos opcionais pré-preenchidos
-        ...extraFields,
+      }
+      // Só inclui `prompt` se houver algum campo de contexto preenchido
+      if (Object.keys(promptFields).length > 0) {
+        createBody.prompt = promptFields
       }
       console.log('📤 [Integração] Body do create-document:', createBody)
 
@@ -338,7 +342,7 @@ export default function Home() {
               <strong className="font-semibold">Configuração:</strong>
               <br />
               Configure as variáveis de ambiente no arquivo <code className="bg-blue-100 px-1 rounded">.env.local</code>.
-              Todos os campos abaixo são opcionais e serão enviados no body do <code className="bg-blue-100 px-1 rounded">create-document</code>.
+              Os campos abaixo são opcionais e vão aninhados em <code className="bg-blue-100 px-1 rounded">prompt</code> no body do <code className="bg-blue-100 px-1 rounded">create-document</code>.
             </p>
           </div>
 
