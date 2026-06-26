@@ -23,17 +23,21 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null)
   const [step, setStep] = useState<'idle' | 'login' | 'create' | 'redirect'>('idle')
 
-  // Seleção do tipo de documento e valores dos campos opcionais
-  const [docTypeId, setDocTypeId] = useState<string>(DOCUMENT_TYPES[0].id)
+  // Seleção do tipo de documento (opcional) e valores dos campos opcionais.
+  // Vazio = nenhum tipo → a CriaAI abre na seleção de tipo e só os campos
+  // comuns são enviados (a API rejeita campos específicos sem classe/subclasse).
+  const [docTypeId, setDocTypeId] = useState<string>('')
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({})
 
   const docType = useMemo(
-    () => DOCUMENT_TYPES.find(d => d.id === docTypeId) || DOCUMENT_TYPES[0],
+    () => DOCUMENT_TYPES.find(d => d.id === docTypeId) || null,
     [docTypeId]
   )
+  const documentClassID = docType?.documentClassID ?? null
+  const documentSubClassID = docType?.documentSubClassID ?? null
   const fieldGroups = useMemo(
-    () => getFieldGroups(docType.documentClassID, docType.documentSubClassID),
-    [docType]
+    () => getFieldGroups(documentClassID, documentSubClassID),
+    [documentClassID, documentSubClassID]
   )
 
   const updateField = (name: string, value: string) => {
@@ -90,9 +94,11 @@ export default function Home() {
       // Campos de contexto escolhidos pelo integrador (descarta vazios).
       // ATENÇÃO: o create-document rejeita esses campos no topo do body
       // (422 Unknown field). Eles vão aninhados num objeto `prompt`.
+      // Sem tipo escolhido, só os campos comuns entram (a API valida o prompt
+      // contra a classe/subclasse; campos específicos sem tipo → 422).
       const promptFields = buildPromptFields(
-        docType.documentClassID,
-        docType.documentSubClassID,
+        documentClassID,
+        documentSubClassID,
         fieldValues
       )
 
@@ -105,9 +111,12 @@ export default function Home() {
         linkCallback: `${typeof window !== 'undefined' ? window.location.origin : ''}/callback?token=demo123`,
         documentType: 'rtf',
         partnerUserId: PARTNER_EMAIL,
-        // Tipo de documento escolhido (vai no topo do body)
-        documentClassID: docType.documentClassID,
-        documentSubClassID: docType.documentSubClassID,
+      }
+      // Classe/subclasse só vão no body se o usuário escolheu um tipo no demo.
+      // Sem tipo: a CriaAI abre na seleção e o prompt leva só os campos comuns.
+      if (documentClassID != null && documentSubClassID != null) {
+        createBody.documentClassID = documentClassID
+        createBody.documentSubClassID = documentSubClassID
       }
       // Só inclui `prompt` se houver algum campo de contexto preenchido
       if (Object.keys(promptFields).length > 0) {
@@ -164,7 +173,7 @@ export default function Home() {
         documentId,
         status: DocumentStatus.IN_PROGRESS,
         continueUrl,
-        title: docType.label,
+        title: docType?.label || 'Documento',
         callbackUrl: `${typeof window !== 'undefined' ? window.location.origin : ''}/callback`
       })
       console.log('📝 Documento salvo no localStorage:', documentId)
@@ -272,13 +281,20 @@ export default function Home() {
               onChange={e => setDocTypeId(e.target.value)}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:bg-gray-100"
             >
+              <option value="">Nenhum — escolher na CriaAI</option>
               {DOCUMENT_TYPES.map(dt => (
                 <option key={dt.id} value={dt.id}>{dt.label}</option>
               ))}
             </select>
             <p className="text-xs text-gray-500">
-              <code className="rounded bg-gray-100 px-1">documentClassID={docType.documentClassID}</code>{' '}
-              <code className="rounded bg-gray-100 px-1">documentSubClassID={docType.documentSubClassID}</code>
+              {docType ? (
+                <>
+                  <code className="rounded bg-gray-100 px-1">documentClassID={documentClassID}</code>{' '}
+                  <code className="rounded bg-gray-100 px-1">documentSubClassID={documentSubClassID}</code>
+                </>
+              ) : (
+                'Sem tipo: a CriaAI abre na seleção de tipo e só os campos comuns são enviados.'
+              )}
             </p>
           </div>
 

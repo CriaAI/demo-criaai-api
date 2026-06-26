@@ -106,7 +106,7 @@ const NOTIFICACAO_FIELDS: FieldDef[] = [
  * Retorna os grupos de campos opcionais aplicáveis a um tipo de documento,
  * conforme o seu documentClassID / documentSubClassID.
  */
-export function getFieldGroups(documentClassID: number, documentSubClassID: number): FieldGroup[] {
+export function getFieldGroups(documentClassID: number | null, documentSubClassID: number | null): FieldGroup[] {
   const groups: FieldGroup[] = [{ title: 'Campos comuns', fields: COMMON_FIELDS }]
 
   if (documentClassID === 1 || documentClassID === 3) {
@@ -128,8 +128,8 @@ export function getFieldGroups(documentClassID: number, documentSubClassID: numb
   return groups
 }
 
-/** Nomes de todos os campos válidos para um dado tipo de documento. */
-export function getFieldNames(documentClassID: number, documentSubClassID: number): string[] {
+/** Nomes de todos os campos válidos para um dado tipo de documento (null → só comuns). */
+export function getFieldNames(documentClassID: number | null, documentSubClassID: number | null): string[] {
   return getFieldGroups(documentClassID, documentSubClassID).flatMap(g => g.fields.map(f => f.name))
 }
 
@@ -141,10 +141,13 @@ export function getFieldNames(documentClassID: number, documentSubClassID: numbe
  * enviados no topo do body (`422 Unknown field`). Eles precisam ir **aninhados**
  * num objeto `prompt` — verificado empiricamente contra o ambiente de dev.
  * Já `documentClassID` / `documentSubClassID` vão no topo do body.
+ *
+ * Quando classe/subclasse são `null` (tipo não escolhido), só os campos comuns
+ * são válidos — a API rejeita campos específicos de tipo sem classe/subclasse.
  */
 export function buildPromptFields(
-  documentClassID: number,
-  documentSubClassID: number,
+  documentClassID: number | null,
+  documentSubClassID: number | null,
   values: Record<string, string>
 ): Record<string, string> {
   const validNames = new Set(getFieldNames(documentClassID, documentSubClassID))
