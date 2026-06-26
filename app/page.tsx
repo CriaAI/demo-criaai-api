@@ -53,7 +53,14 @@ export default function Home() {
   const PARTNER_EMAIL = process.env.NEXT_PUBLIC_PARTNER_EMAIL || 'partner@example.com'
   const PARTNER_PASSWORD = process.env.NEXT_PUBLIC_PARTNER_PASSWORD || 'password123'
 
-  const handleCreateDocument = async () => {
+  // Núcleo do fluxo: login → create-document → redirect.
+  // Recebe o prompt e a classe/subclasse já prontos (os botões decidem o quê enviar).
+  const createDocumentFlow = async (
+    promptFields: Record<string, string | number>,
+    classID: number | null,
+    subID: number | null,
+    title: string
+  ) => {
     setLoading(true)
     setError(null)
     setStep('login')
@@ -91,18 +98,10 @@ export default function Home() {
 
       setStep('create')
 
-      // Campos de contexto escolhidos pelo integrador (descarta vazios).
-      // ATENÇÃO: o create-document rejeita esses campos no topo do body
-      // (422 Unknown field). Eles vão aninhados num objeto `prompt`.
-      // Sem tipo escolhido, só os campos comuns entram (a API valida o prompt
-      // contra a classe/subclasse; campos específicos sem tipo → 422).
-      const promptFields = buildPromptFields(
-        documentClassID,
-        documentSubClassID,
-        fieldValues
-      )
-
       // Passo 2: Criar documento externo
+      // ATENÇÃO: campos de contexto vão aninhados em `prompt` (no topo do body
+      // a API responde 422 Unknown field). Sem classe/subclasse, só campos
+      // comuns são aceitos.
       // credentials: 'include' é OBRIGATÓRIO: a API responde com a origin ecoada +
       // Access-Control-Allow-Credentials: true e devolve Set-Cookie (authToken,
       // authRefreshToken, documentId) no Domain=.criaai.com. É assim que a sessão
@@ -114,9 +113,9 @@ export default function Home() {
       }
       // Classe/subclasse só vão no body se o usuário escolheu um tipo no demo.
       // Sem tipo: a CriaAI abre na seleção e o prompt leva só os campos comuns.
-      if (documentClassID != null && documentSubClassID != null) {
-        createBody.documentClassID = documentClassID
-        createBody.documentSubClassID = documentSubClassID
+      if (classID != null && subID != null) {
+        createBody.documentClassID = classID
+        createBody.documentSubClassID = subID
       }
       // Só inclui `prompt` se houver algum campo de contexto preenchido
       if (Object.keys(promptFields).length > 0) {
@@ -173,7 +172,7 @@ export default function Home() {
         documentId,
         status: DocumentStatus.IN_PROGRESS,
         continueUrl,
-        title: docType?.label || 'Documento',
+        title,
         callbackUrl: `${typeof window !== 'undefined' ? window.location.origin : ''}/callback`
       })
       console.log('📝 Documento salvo no localStorage:', documentId)
@@ -206,6 +205,19 @@ export default function Home() {
       console.error('Erro no fluxo:', err)
     }
   }
+
+  // Botão principal: usa o tipo + campos preenchidos no formulário.
+  const handleCreateDocument = () =>
+    createDocumentFlow(
+      buildPromptFields(documentClassID, documentSubClassID, fieldValues),
+      documentClassID,
+      documentSubClassID,
+      docType?.label || 'Documento'
+    )
+
+  // Botão de teste: só `prompt: { areaDoDireito: 'teste' }`, sem classe/subclasse.
+  const handleCreateTestDocument = () =>
+    createDocumentFlow({ areaDoDireito: 'teste' }, null, null, 'Teste areaDoDireito')
 
   const renderField = (field: FieldDef) => {
     const value = fieldValues[field.name] || ''
@@ -377,6 +389,14 @@ export default function Home() {
               ) : (
                 'Criar Documento na CriaAI'
               )}
+            </button>
+
+            <button
+              onClick={handleCreateTestDocument}
+              disabled={loading}
+              className="w-full bg-amber-500 hover:bg-amber-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition-colors shadow"
+            >
+              🧪 Teste: criar só com areaDoDireito=&quot;teste&quot;
             </button>
 
             <button
